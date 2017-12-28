@@ -1,0 +1,10 @@
+---
+app_locale: en
+git_user: 
+git_password: 
+site_fqdn: mindwodemo.dev
+user_name: mindwo
+user_password: mindwo_password
+db_user: dbuser
+db_user_password: dbpassword
+mysql_phpmyadmin_password: mysqlphpmyadminpassword

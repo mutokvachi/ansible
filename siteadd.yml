@@ -1,0 +1,92 @@
+# Install LAMP server with laravel
+---
+- hosts: all
+  user: ansible
+  sudo: yes
+  vars_files:
+    - config.yml
+  tasks:
+
+   - name: Test connection
+     ping:
+
+   - name: Creating user "{{ user_name }}" with password
+     user: name={{ user_name }} password={{ user_password |password_hash('sha512') }}
+
+   - name: Create MySQL database "{{user_name}}"
+     mysql_db: name={{user_name}} collation=utf8_general_ci state=present
+     
+   - name: Copy database dump
+     copy: src=files/db.sql dest=/tmp/db.sql
+     
+   - name: Import default database data
+     mysql_db: name={{ user_name }} target=/tmp/db.sql state=import
+
+   - name: Create MySQL user "{{user_name}}" with password and grant permissions to "{{user_name}}" database
+     mysql_user: name={{user_name}}  password={{user_password}} priv={{user_name}}.*:ALL state=present
+
+   - name: Create MySQL user "{{db_user}}" with password and grant limited permissions to "{{user_name}}" database
+     mysql_user: name={{db_user}}  password={{db_user_password}} priv={{user_name}}.*:INSERT,UPDATE,SELECT:ALL state=present
+
+   - name: Enable mysql auto login
+     template: src=.my.cnf dest=/home/{{ user_name }}/.my.cnf
+     
+   - name: create virtual host for  "{{site_fqdn}}"
+     template: src=host.conf dest=/etc/apache2/sites-available/{{user_name}}.conf
+
+   - name: Installing mindwo (please be patient)
+     git:
+       repo: 'https://{{ git_user | urlencode }}:{{ git_password | urlencode }}@bitbucket.org/mindwo/mindwo.git'
+       dest: /home/{{ user_name }}/mindwo
+       version: develop
+
+   - name: Installing dependencies (even more patient)
+     shell: composer install
+     args:
+       chdir: /home/{{ user_name }}/mindwo/
+       
+   - name: Write configuration
+     template: src=.env dest=/home/{{ user_name }}/mindwo/.env
+     
+   - name: Copy dx.php
+     copy: src=files/dx.example.php dest=/home/{{ user_name }}/mindwo/config/dx.php
+     
+   - name: Copy assets.php
+     copy: src=files/assets.php dest=/home/{{ user_name }}/mindwo/config/assets.php
+     
+   - name: Copy database.php
+     copy: src=files/database.php dest=/home/{{ user_name }}/mindwo/config/database.php
+     
+   - name: Run composer dump-autoload
+     shell: composer dump-autoload
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+     
+   - name: Publishing vendor assets
+     shell: php artisan vendor:publish --tag=setup --force
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Run migrations
+     shell: php artisan migrate --database=mysql_admin
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Build config cache
+     shell: php artisan config:cache
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+#   - name: Build route cache
+#     shell: php artisan route:cache
+#     args:
+#       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Change permissions
+     shell: chown -R {{user_name}}:{{user_name}} /home/{{user_name}}
+
+   - name: Enable virtualhost
+     shell: a2ensite {{user_name}}
+
+   - name: Service apache reload
+     service: name=apache2 state=reloaded

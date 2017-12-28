@@ -1,0 +1,44 @@
+# Remove site 
+--- 
+- hosts: all
+  user: ansible
+  sudo: yes
+  vars_files:
+    - config.yml
+  tasks:
+
+   - name: Test connection
+     ping:
+
+   - name: Deleting user "{{ user_name }}" 
+     user: name={{ user_name }} state=absent
+
+   - name: Deleting MySQL database "{{user_name}}"
+     mysql_db: name={{user_name}} state=absent
+
+   - name: Delete MySQL user "{{user_name}}" 
+     mysql_user: name={{user_name}}   state=absent
+
+   - name: Delete MySQL user "{{db_user}}" 
+     mysql_user: name={{db_user}}   state=absent
+
+
+   - name: Disable virtaulhost
+     shell: a2dissite {{user_name}}
+     ignore_errors: yes
+
+   - name: Remove virtual host for  "{{site_fqdn}}"
+     file: name=/etc/apache2/sites-available/{{user_name}}.conf state=absent
+
+   - name: Service apache reload
+     service: name=apache2 state=reloaded
+
+   - name: Remove homedir
+     file:
+       name: /home/{{user_name}}
+       state: directory
+       state: absent
+
+
+
+

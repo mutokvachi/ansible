@@ -1,0 +1,153 @@
+# Install LAMP server with laravel
+--- 
+- hosts: all
+  user: ansible
+  sudo: yes
+  vars_files:
+    - config.yml
+  tasks:
+
+   - name: Test connection
+     ping:
+
+
+   - name: Remove php5
+     shell: apt-get remove  php5* -y
+
+
+   - name: Install required software
+     apt: name={{ item }} state=present update_cache=yes
+     with_items:
+      - apache2
+      - libapache2-mpm-itk
+      - software-properties-common
+      - python-software-properties
+      - python-mysqldb
+      - git
+      - curl
+
+   - name: Install php repository
+     shell: add-apt-repository ppa:ondrej/php
+
+   - name: Download mysql repository configuration package
+     shell: wget http://dev.mysql.com/get/mysql-apt-config_0.8.7-1_all.deb
+     args:
+       chdir: /tmp/
+       creates: mysql-apt-config_0.8.7-1_all.deb
+     
+   - name: Install mysql repository
+     shell: DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION="mysql-5.7" dpkg -i mysql-apt-config_0.8.7-1_all.deb
+     args:
+       chdir: /tmp/
+
+   - name: Update apt database
+     shell: sudo apt-get update
+
+   - name: Install php7 and mysql-5.7
+     apt: name={{ item }} state=present update_cache=yes force=yes
+     with_items:
+      - php7.0
+      - php7.0-fpm
+      - php7.0-cli 
+      - php7.0-common 
+      - php7.0-mysql 
+      - php7.0-curl 
+      - php7.0-gd 
+      - php7.0-cgi 
+      - php7.0-phpdbg 
+      - php7.0-fpm 
+      - libphp7.0-embed 
+      - php7.0-enchant 
+      - php7.0-gmp 
+      - php7.0-imap 
+      - php7.0-interbase 
+      - php7.0-intl 
+      - php7.0-ldap 
+      - php7.0-mcrypt 
+      - php7.0-readline 
+      - php7.0-odbc 
+      - php7.0-pgsql 
+      - php7.0-pspell 
+      - php7.0-recode 
+      - php7.0-snmp  
+      - php7.0-tidy 
+      - php7.0-xmlrpc 
+      - php7.0-xsl 
+      - php7.0-json 
+      - php7.0-sybase 
+      - php7.0-sqlite3 
+      - php7.0-opcache 
+      - php7.0-bz2
+      - php7.0-mbstring 
+      - php7.0-zip 
+      - libapache2-mod-php7.0
+      - mysql-server
+
+   - name: Apache module enable
+     apache2_module: state=present name={{ item }}
+     with_items:
+      - rewrite
+      - alias
+      - auth_basic
+      - authn_file
+      - authz_groupfile
+      - authz_host
+      - authz_user
+      - autoindex
+      - cgi
+      - deflate
+      - dir
+      - env
+      - expires
+      - headers
+      - mime
+      - negotiation
+      - reqtimeout
+      - setenvif
+      - status
+      - mpm_itk
+
+
+
+
+#   - name: Install other software
+#     apt: name={{ item }} state=present update_cache=yes 
+#     with_items:
+#      - phpmyadmin
+
+   - name: ensure anonymous users are not in the database
+     mysql_user: name='' host=$item state=absent
+     with_items:
+      - localhost
+      - $inventory_hostname
+
+   - name: remove the test database
+     mysql_db: name=test state=absent
+
+   - name: Set phpmyadmin (with root privs)  user password
+     mysql_user: name=phpmyadmin
+              password="{{ mysql_phpmyadmin_password }}"
+              check_implicit_admin=yes
+              login_user="root"
+              state=present
+              host=localhost
+              priv=*.*:ALL,GRANT
+
+   - name: Create phpmyadmin dir
+     file: path=/usr/share/phpmyadmin state=directory
+
+#   - name: Clone phpmyadmin from git
+#     shell: git clone --depth=1 --branch=STABLE https://github.com/phpmyadmin/phpmyadmin.git /usr/share/phpmyadmin
+
+
+   - name: Get phpmyadmin from git
+     git:  clone=yes depth=1 version=STABLE repo=https://github.com/phpmyadmin/phpmyadmin.git dest=/usr/share/phpmyadmin
+
+   - name: Install composer
+     shell: curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+
+   - name: Copy apache default for phpmyadmin
+     copy: src=files/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
+
+   - name: Service apache restarted
+     service: name=apache2 state=restarted
