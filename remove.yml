@@ -36,9 +36,6 @@
    - name: Remove homedir
      file:
        name: /home/{{user_name}}
-       state: directory
        state: absent
-
-
 
 

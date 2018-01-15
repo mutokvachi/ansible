@@ -107,9 +107,6 @@
       - status
       - mpm_itk
 
-
-
-
 #   - name: Install other software
 #     apt: name={{ item }} state=present update_cache=yes 
 #     with_items:
@@ -124,6 +121,12 @@
    - name: remove the test database
      mysql_db: name=test state=absent
 
+   - name: Disable exec functions for mod_php (but not for cli)
+     copy: src=files/00-disable_exec.ini dest=/etc/php/7.0/apache2/conf.d/00-disable_exec.ini
+     
+   - name: Install composer
+     shell: curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+
    - name: Set phpmyadmin (with root privs)  user password
      mysql_user: name=phpmyadmin
               password="{{ mysql_phpmyadmin_password }}"
@@ -136,15 +139,16 @@
    - name: Create phpmyadmin dir
      file: path=/usr/share/phpmyadmin state=directory
 
-#   - name: Clone phpmyadmin from git
-#     shell: git clone --depth=1 --branch=STABLE https://github.com/phpmyadmin/phpmyadmin.git /usr/share/phpmyadmin
-
-
    - name: Get phpmyadmin from git
      git:  clone=yes depth=1 version=STABLE repo=https://github.com/phpmyadmin/phpmyadmin.git dest=/usr/share/phpmyadmin
 
-   - name: Install composer
-     shell: curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+   - name: Install dependencies for phpmyadmin
+     shell: composer install
+     args:
+       chdir: /usr/share/phpmyadmin
+
+   - name: Install config file for phpmyadmin
+     template: src=config.inc.php dest=/usr/share/phpmyadmin
 
    - name: Copy apache default for phpmyadmin
      copy: src=files/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
