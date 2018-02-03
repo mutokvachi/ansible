@@ -1,7 +1,7 @@
 # Install LAMP server with laravel
 ---
 - hosts: all
-  user: ansible
+  user: ubuntu
   sudo: yes
   vars_files:
     - config.yml

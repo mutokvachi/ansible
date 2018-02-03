@@ -1,7 +1,7 @@
 # Remove site 
 --- 
 - hosts: all
-  user: ansible
+  user: ubuntu
   sudo: yes
   vars_files:
     - config.yml
