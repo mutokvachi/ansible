@@ -1,2 +1,5 @@
 config.yml
 install.retry
+siteadd.retry
+remove.retry
+hosts_

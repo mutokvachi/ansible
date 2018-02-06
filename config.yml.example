@@ -1,4 +1,5 @@
 ---
+login_user: ubuntu
 app_locale: en
 git_user: 
 git_password: 

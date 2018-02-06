@@ -1,7 +1,7 @@
 # Remove site 
 --- 
 - hosts: all
-  user: ubuntu
+  user: "{{ login_user }}"
   sudo: yes
   vars_files:
     - config.yml

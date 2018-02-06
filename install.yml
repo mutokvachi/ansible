@@ -1,7 +1,7 @@
 # Install LAMP server with laravel
 --- 
 - hosts: all
-  user: ubuntu
+  user: "{{ login_user }}"
   sudo: yes
   vars_files:
     - config.yml
@@ -25,6 +25,8 @@
       - python-mysqldb
       - git
       - curl
+      - openssl
+      - ca-certificates
 
    - name: Install php repository
      shell: add-apt-repository ppa:ondrej/php
