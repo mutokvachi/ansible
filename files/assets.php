@@ -2,7 +2,7 @@
 
 return [
 	'public_img_path' => '/img/',
-	'private_file_path' => 'app/files',
+	'private_file_path' => '/app/files',
 	
 	'images' => [
 		
