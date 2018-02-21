@@ -25,8 +25,6 @@
       - python-mysqldb
       - git
       - curl
-      - openssl
-      - ca-certificates
 
    - name: Install php repository
      shell: add-apt-repository ppa:ondrej/php
@@ -84,6 +82,10 @@
       - php7.0-zip 
       - libapache2-mod-php7.0
       - mysql-server
+      - openssl=1.0.1f-1ubuntu2.23
+      - libssl-dev=1.0.1f-1ubuntu2.23
+      - libxrender1
+      - ca-certificates
 
    - name: Apache module enable
      apache2_module: state=present name={{ item }}
@@ -108,11 +110,6 @@
       - setenvif
       - status
       - mpm_itk
-
-#   - name: Install other software
-#     apt: name={{ item }} state=present update_cache=yes 
-#     with_items:
-#      - phpmyadmin
 
    - name: ensure anonymous users are not in the database
      mysql_user: name='' host=$item state=absent
@@ -141,19 +138,31 @@
    - name: Create phpmyadmin dir
      file: path=/usr/share/phpmyadmin state=directory
 
-   - name: Get phpmyadmin from git
-     git:  clone=yes depth=1 version=STABLE repo=https://github.com/phpmyadmin/phpmyadmin.git dest=/usr/share/phpmyadmin
-
-   - name: Install dependencies for phpmyadmin
-     shell: composer install
-     args:
-       chdir: /usr/share/phpmyadmin
+   - name: Download the latest stable release of phpmyadmin
+     get_url:
+       url: https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.tar.xz
+       dest: /tmp/phpmyadmin.tar.xz
+       validate_certs: no
+       
+   - name: Unpack phpmyadmin
+     unarchive:
+       src: /tmp/phpmyadmin.tar.xz
+       dest: /usr/share/phpmyadmin
+       remote_src: yes
+       extra_opts: [ --strip-components=1 ]
 
    - name: Install config file for phpmyadmin
      template: src=config.inc.php dest=/usr/share/phpmyadmin
 
    - name: Copy apache default for phpmyadmin
      copy: src=files/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
+
+#   - name: Install proper versions of some packages for mindwo's pdf export to work
+#     apt: name={{ item }} state=present update_cache=yes 
+#     with_items:
+#      - openssl=1.0.1f-1ubuntu2.23
+#      - libssl-dev=1.0.1f-1ubuntu2.23
+#      - libxrender1
 
    - name: Service apache restarted
      service: name=apache2 state=restarted
