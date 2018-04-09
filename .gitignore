@@ -3,3 +3,4 @@ install.retry
 siteadd.retry
 remove.retry
 hosts_
+*.retry

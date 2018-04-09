@@ -9,3 +9,6 @@ user_password: mindwo_password
 db_user: dbuser
 db_user_password: dbpassword
 mysql_phpmyadmin_password: mysqlphpmyadminpassword
+
+tomcat_user: tomcat
+tomcat_user_password: tomcat
