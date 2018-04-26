@@ -12,3 +12,4 @@ mysql_phpmyadmin_password: mysqlphpmyadminpassword
 
 tomcat_user: tomcat
 tomcat_user_password: tomcat_password
+tomcat_port: 8080
