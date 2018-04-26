@@ -25,12 +25,14 @@
       - python-mysqldb
       - git
       - curl
+      - ghostscript
+      - unoconv
 
    - name: Install php repository
      shell: add-apt-repository ppa:ondrej/php
 
    - name: Download mysql repository configuration package
-     shell: wget http://dev.mysql.com/get/mysql-apt-config_0.8.7-1_all.deb
+     shell: wget --no-check-certificate http://dev.mysql.com/get/mysql-apt-config_0.8.7-1_all.deb
      args:
        chdir: /tmp/
        creates: mysql-apt-config_0.8.7-1_all.deb
@@ -82,8 +84,10 @@
       - php7.0-zip 
       - libapache2-mod-php7.0
       - mysql-server
-      - openssl=1.0.1f-1ubuntu2.23
-      - libssl-dev=1.0.1f-1ubuntu2.23
+      - openssl
+#      =1.0.1f-1ubuntu2.23
+      - libssl-dev
+#      =1.0.1f-1ubuntu2.23
       - libxrender1
       - ca-certificates
 

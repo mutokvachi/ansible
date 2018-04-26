@@ -30,7 +30,10 @@
   <!.. ..> that surrounds them.
 -->
 
-  <user username="{{ tomcat_user }}" password="{{ tomcat_user_password }}" roles="manager-gui" />
+  <role rolename="admin-gui"/>
+  <role rolename="manager"/>
+  <role rolename="manager-gui"/>
+  <user username="{{ tomcat_user }}" password="{{ tomcat_user_password }}" roles="admin-gui,manager,manager-gui" />
 
 <!--
   <role rolename="tomcat"/>

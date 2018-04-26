@@ -11,4 +11,4 @@ db_user_password: dbpassword
 mysql_phpmyadmin_password: mysqlphpmyadminpassword
 
 tomcat_user: tomcat
-tomcat_user_password: tomcat
+tomcat_user_password: tomcat_password
