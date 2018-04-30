@@ -2,9 +2,13 @@
 --- 
 - hosts: all
   user: "{{ login_user }}"
-  sudo: yes
+
+  become: yes
+  become_method: sudo
+
   vars_files:
     - config.yml
+    
   tasks:
 
    - name: Test connection
@@ -22,7 +26,6 @@
    - name: Delete MySQL user "{{db_user}}" 
      mysql_user: name={{db_user}}   state=absent
 
-
    - name: Disable virtaulhost
      shell: a2dissite {{user_name}}
      ignore_errors: yes
@@ -37,5 +40,3 @@
      file:
        name: /home/{{user_name}}
        state: absent
-
-

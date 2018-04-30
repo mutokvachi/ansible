@@ -2,21 +2,25 @@
 --- 
 - hosts: all
   user: "{{ login_user }}"
-  sudo: yes
+
+  become: yes
+  become_method: sudo
+
   vars_files:
     - config.yml
+    
   tasks:
 
-    - name: Install Java 1.7
-      apt: name=openjdk-7-jdk
+    - name: Update apt database
+      apt: update_cache=yes
 
-#    - name: add group "tomcat"
-#      group: name=tomcat
+    - name: Install Java 1.7 (Ubuntu 14.04)
+      apt: name=openjdk-7-jdk state=present
+      when: ansible_distribution_major_version|int < 16
 
-#    - name: add user "tomcat"
-#      user: name=tomcat group=tomcat home=/usr/share/tomcat createhome=no
-#      become: True
-#      become_method: sudo
+    - name: Install Java 1.8 (Ubuntu 16.04 & 18.04)
+      apt: name=openjdk-8-jdk state=present
+      when: ansible_distribution_major_version|int > 14
 
     - name: Download Tomcat
       get_url: url=http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.29/bin/apache-tomcat-8.5.29.tar.gz dest=/opt/apache-tomcat-8.5.29.tar.gz
@@ -39,14 +43,20 @@
     - name: Enable access to host manager interface from outside
       copy: src=context.xml dest=/usr/share/tomcat/webapps/host-manager/META-INF/
 
-    - name: Install Tomcat init script
+    - name: Install Tomcat init script (Ubuntu 14.4)
       template: src=tomcat-initscript.sh dest=/etc/init.d/tomcat mode=0755
-      
+      when: ansible_distribution_major_version|int < 16
+
+    - name: Install Tomcat init script (Ubuntu 16.04 & 18.04)
+      template: src=tomcat.service dest=/etc/systemd/system mode=0755
+      when: ansible_distribution_major_version|int > 14
+
     - name: Change ownership of Tomcat installation
       file: path=/usr/share/tomcat/ owner={{ user_name }} group={{ user_name }} state=directory recurse=yes
 
-#    - name: systemd daemon-reload
-#      shell: systemctl daemon-reload
+    - name: systemd daemon-reload
+      shell: systemctl daemon-reload
+      when: ansible_distribution_major_version|int > 14
 
     - name: tomcat-8-start
       service: name=tomcat state=started enabled=yes

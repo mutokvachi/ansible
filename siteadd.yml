@@ -2,9 +2,16 @@
 ---
 - hosts: all
   user: "{{ login_user }}"
-  sudo: yes
+
+  become: yes
+  become_method: sudo
+
+  environment:
+    GIT_SSL_NO_VERIFY: true
+  
   vars_files:
     - config.yml
+    
   tasks:
 
    - name: Test connection

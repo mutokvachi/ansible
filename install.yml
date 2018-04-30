@@ -1,32 +1,45 @@
 # Install LAMP server with laravel
---- 
+---
 - hosts: all
   user: "{{ login_user }}"
-  sudo: yes
+
+  become: yes
+  become_method: sudo
+
   vars_files:
     - config.yml
+
   tasks:
 
    - name: Test connection
      ping:
 
+   - name: Add {{ site_fqdn }} entry to /etc/hosts (for wkhtmltopdf to work)
+     shell: echo "127.0.1.1 {{ site_fqdn }}" >> /etc/hosts
 
    - name: Remove php5
-     shell: apt-get remove  php5* -y
+     shell: apt-get remove php5* -y
 
+   - name: Update apt database
+     apt: update_cache=yes
 
    - name: Install required software
-     apt: name={{ item }} state=present update_cache=yes
+     apt: name={{ item }} state=present
      with_items:
       - apache2
       - libapache2-mpm-itk
       - software-properties-common
-      - python-software-properties
       - python-mysqldb
       - git
       - curl
       - ghostscript
       - unoconv
+
+   - name: Install packages specific for Ubuntu =< 16.04
+     apt: name={{ item }} state=present
+     when: ansible_distribution_major_version|int < 18
+     with_items:
+      - python-software-properties
 
    - name: Install php repository
      shell: add-apt-repository ppa:ondrej/php
@@ -43,53 +56,76 @@
        chdir: /tmp/
 
    - name: Update apt database
-     shell: sudo apt-get update
+     apt: update_cache=yes
 
    - name: Install php7 and mysql-5.7
-     apt: name={{ item }} state=present update_cache=yes force=yes
+     apt: name={{ item }} state=present force=yes
      with_items:
-      - php7.0
-      - php7.0-fpm
-      - php7.0-cli 
-      - php7.0-common 
-      - php7.0-mysql 
-      - php7.0-curl 
-      - php7.0-gd 
-      - php7.0-cgi 
-      - php7.0-phpdbg 
-      - php7.0-fpm 
-      - libphp7.0-embed 
-      - php7.0-enchant 
-      - php7.0-gmp 
-      - php7.0-imap 
-      - php7.0-interbase 
-      - php7.0-intl 
-      - php7.0-ldap 
-      - php7.0-mcrypt 
-      - php7.0-readline 
-      - php7.0-odbc 
-      - php7.0-pgsql 
-      - php7.0-pspell 
-      - php7.0-recode 
-      - php7.0-snmp  
-      - php7.0-tidy 
-      - php7.0-xmlrpc 
-      - php7.0-xsl 
-      - php7.0-json 
-      - php7.0-sybase 
-      - php7.0-sqlite3 
-      - php7.0-opcache 
-      - php7.0-bz2
-      - php7.0-mbstring 
-      - php7.0-zip 
-      - libapache2-mod-php7.0
+      - php{{ php_version }}
+      - php{{ php_version }}-fpm
+      - php{{ php_version }}-cli 
+      - php{{ php_version }}-common 
+      - php{{ php_version }}-mysql 
+      - php{{ php_version }}-curl 
+      - php{{ php_version }}-gd 
+      - php{{ php_version }}-cgi 
+      - php{{ php_version }}-phpdbg 
+      - php{{ php_version }}-fpm 
+      - libphp{{ php_version }}-embed 
+      - php{{ php_version }}-enchant 
+      - php{{ php_version }}-gmp 
+      - php{{ php_version }}-imap 
+      - php{{ php_version }}-interbase 
+      - php{{ php_version }}-intl 
+      - php{{ php_version }}-ldap 
+      - php{{ php_version }}-mcrypt 
+      - php{{ php_version }}-readline 
+      - php{{ php_version }}-odbc 
+      - php{{ php_version }}-pgsql 
+      - php{{ php_version }}-pspell 
+      - php{{ php_version }}-recode 
+      - php{{ php_version }}-snmp  
+      - php{{ php_version }}-tidy 
+      - php{{ php_version }}-xmlrpc 
+      - php{{ php_version }}-xsl 
+      - php{{ php_version }}-json 
+      - php{{ php_version }}-sybase 
+      - php{{ php_version }}-sqlite3 
+      - php{{ php_version }}-opcache 
+      - php{{ php_version }}-bz2
+      - php{{ php_version }}-mbstring 
+      - php{{ php_version }}-zip 
+      - libapache2-mod-php{{ php_version }}
       - mysql-server
       - openssl
-#      =1.0.1f-1ubuntu2.23
-      - libssl-dev
-#      =1.0.1f-1ubuntu2.23
       - libxrender1
       - ca-certificates
+
+   - name: Make pdf export working (Ubuntu 14.04)
+     apt: name={{ item }} state=present
+     when: ansible_distribution_major_version|int == 14
+     with_items:
+      - libssl-dev=1.0.1f-1ubuntu2.25
+
+   - name: Make pdf export working (Ubuntu 16.04)
+     apt: name={{ item }} state=present
+     when: ansible_distribution_major_version|int == 16
+     with_items:
+      - libssl-dev=1.0.2g-1ubuntu4.12
+
+   - name: Make pdf export working (Ubuntu 18.04)
+     apt: name={{ item }} state=present
+     when: ansible_distribution_major_version|int == 18
+     with_items:
+      - libssl1.0-dev
+
+   - name: Hold proper version of libssl-dev (Ubuntu 14.04 & 16.04)
+     shell: apt-mark hold libssl-dev
+     when: ansible_distribution_major_version|int < 18
+
+   - name: Hold proper version of libssl-dev (Ubuntu 18.04)
+     shell: apt-mark hold libssl1.0-dev
+     when: ansible_distribution_major_version|int > 16
 
    - name: Apache module enable
      apache2_module: state=present name={{ item }}
@@ -125,7 +161,7 @@
      mysql_db: name=test state=absent
 
    - name: Disable exec functions for mod_php (but not for cli)
-     copy: src=files/00-disable_exec.ini dest=/etc/php/7.0/apache2/conf.d/00-disable_exec.ini
+     copy: src=files/00-disable_exec.ini dest=/etc/php/{{ php_version }}/apache2/conf.d/00-disable_exec.ini
      
    - name: Install composer
      shell: curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
@@ -160,13 +196,6 @@
 
    - name: Copy apache default for phpmyadmin
      copy: src=files/000-default.conf dest=/etc/apache2/sites-available/000-default.conf
-
-#   - name: Install proper versions of some packages for mindwo's pdf export to work
-#     apt: name={{ item }} state=present update_cache=yes 
-#     with_items:
-#      - openssl=1.0.1f-1ubuntu2.23
-#      - libssl-dev=1.0.1f-1ubuntu2.23
-#      - libxrender1
 
    - name: Service apache restarted
      service: name=apache2 state=restarted
