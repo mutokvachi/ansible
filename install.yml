@@ -101,6 +101,12 @@
       - libxrender1
       - ca-certificates
 
+   - name: Update mysqld configuration
+     copy: src=files/mysqld_mindwo.cnf dest=/etc/mysql/mysql.conf.d/mysqld_mindwo.cnf
+
+   - name: Service mysql restarted
+     service: name=mysql state=restarted
+     
    - name: Make pdf export working (Ubuntu 14.04)
      apt: name={{ item }} state=present
      when: ansible_distribution_major_version|int == 14
@@ -183,7 +189,7 @@
        url: https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.tar.xz
        dest: /tmp/phpmyadmin.tar.xz
        validate_certs: no
-       
+
    - name: Unpack phpmyadmin
      unarchive:
        src: /tmp/phpmyadmin.tar.xz
