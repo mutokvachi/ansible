@@ -49,7 +49,7 @@
      args:
        chdir: /tmp/
        creates: mysql-apt-config_0.8.7-1_all.deb
-     
+
    - name: Install mysql repository
      shell: DEBIAN_FRONTEND=noninteractive MYSQL_SERVER_VERSION="mysql-5.7" dpkg -i mysql-apt-config_0.8.7-1_all.deb
      args:
@@ -106,18 +106,18 @@
 
    - name: Service mysql restarted
      service: name=mysql state=restarted
-     
+
    - name: Make pdf export working (Ubuntu 14.04)
      apt: name={{ item }} state=present
      when: ansible_distribution_major_version|int == 14
      with_items:
-      - libssl-dev=1.0.1f-1ubuntu2.25
+      - libssl-dev=1.0.1*
 
    - name: Make pdf export working (Ubuntu 16.04)
      apt: name={{ item }} state=present
      when: ansible_distribution_major_version|int == 16
      with_items:
-      - libssl-dev=1.0.2g-1ubuntu4.12
+      - libssl-dev=1.0.*
 
    - name: Make pdf export working (Ubuntu 18.04)
      apt: name={{ item }} state=present
@@ -168,7 +168,7 @@
 
    - name: Disable exec functions for mod_php (but not for cli)
      copy: src=files/00-disable_exec.ini dest=/etc/php/{{ php_version }}/apache2/conf.d/00-disable_exec.ini
-     
+
    - name: Install composer
      shell: curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
 
