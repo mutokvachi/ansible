@@ -33,7 +33,7 @@
      mysql_user: name={{user_name}}  password={{user_password}} priv={{user_name}}.*:ALL state=present
 
    - name: Create MySQL user "{{db_user}}" with password and grant limited permissions to "{{user_name}}" database
-     mysql_user: name={{db_user}}  password={{db_user_password}} priv={{user_name}}.*:INSERT,UPDATE,SELECT,DELETE:ALL state=present
+     mysql_user: name={{db_user}}  password={{db_user_password}} priv={{db_user}}.*:INSERT,UPDATE,SELECT,DELETE:ALL state=present
 
    - name: Enable mysql auto login
      template: src=.my.cnf dest=/home/{{ user_name }}/.my.cnf
