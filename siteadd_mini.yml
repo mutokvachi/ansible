@@ -1,0 +1,81 @@
+# Install LAMP server with laravel
+---
+- hosts: all
+  user: "{{ login_user }}"
+
+  become: yes
+  become_method: sudo
+
+  environment:
+    GIT_SSL_NO_VERIFY: true
+  
+  vars_files:
+    - config.yml
+    
+  tasks:
+
+   - name: Test connection
+     ping:
+
+   - name: Installing dependencies (even more patient)
+     shell: composer install
+     args:
+       chdir: /home/{{ user_name }}/mindwo/
+       
+   - name: Write configuration
+     template: src=.env dest=/home/{{ user_name }}/mindwo/.env
+     vars:
+       app_env: local
+     
+   - name: Copy dx.php
+     copy: src=files/dx.example.php dest=/home/{{ user_name }}/mindwo/config/dx.php
+     
+   - name: Copy assets.php
+     copy: src=files/assets.php dest=/home/{{ user_name }}/mindwo/config/assets.php
+     
+   - name: Copy database.php
+     copy: src=files/database.php dest=/home/{{ user_name }}/mindwo/config/database.php
+     
+   - name: Run composer dump-autoload
+     shell: composer dump-autoload
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+     
+   - name: Publishing vendor assets
+     shell: php artisan vendor:publish --tag=setup --force
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Build config cache
+     shell: php artisan config:cache
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+#   - name: Build route cache
+#     shell: php artisan route:cache
+#     args:
+#       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Run migrations
+     shell: php artisan migrate --database=mysql_admin
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Write configuration for production
+     template: src=.env dest=/home/{{ user_name }}/mindwo/.env
+     vars:
+       app_env: production
+
+   - name: Build config cache once again
+     shell: php artisan config:cache
+     args:
+       chdir: /home/{{ user_name }}/mindwo
+
+   - name: Change permissions
+     shell: chown -R {{user_name}}:{{user_name}} /home/{{user_name}}
+
+   - name: Enable virtualhost
+     shell: a2ensite {{user_name}}
+
+   - name: Service apache reload
+     service: name=apache2 state=reloaded
